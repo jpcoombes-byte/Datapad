@@ -1,6 +1,6 @@
-// Datapad service worker — build a009392678
-const CACHE = 'datapad-a009392678';
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon.png", "./img/armour-s.json", "./img/components-s.json", "./img/ships-s.json", "./img/shipweapons-s.json", "./img/weapons-s.json"];
+// Datapad service worker — build e73c3bbf82
+const CACHE = 'datapad-e73c3bbf82';
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon.png", "./img/armour-s.json?v=2026-11-01", "./img/components-s.json?v=2026-11-01", "./img/ships-s.json?v=2026-11-01", "./img/shipweapons-s.json?v=2026-11-01", "./img/weapons-s.json?v=2026-11-01"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -14,7 +14,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   // the app page: try the network first so new data shows up, fall back to the saved copy offline
   if (req.mode === 'navigate' || (url.origin === location.origin && (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')))) {
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return res; })
+    e.respondWith(fetch(req.url, { cache: 'no-cache' }).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return res; })
       .catch(() => caches.match('./index.html')));
     return;
   }

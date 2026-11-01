@@ -1037,7 +1037,7 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 
   // ---------- pictures (bundled thumbnails; large ones in chunks, loaded when needed) ----------
   const PIC = { small: {}, smallP: {}, large: {}, largeP: {} };
-  const getJSON = url => fetch(url).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const getJSON = url => fetch(url + '?v=' + encodeURIComponent(META.built || '')).then(r => r.ok ? r.json() : {}).catch(() => ({}));
   function loadSmall(tab) {
     if (!PIC.smallP[tab]) PIC.smallP[tab] = getJSON(`img/${tab}-s.json`).then(d => { PIC.small[tab] = d; return d; });
     return PIC.smallP[tab];
