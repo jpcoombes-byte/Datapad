@@ -1,0 +1,37 @@
+{
+  "name": "Datapad",
+  "short_name": "Datapad",
+  "description": "Star Citizen ships, ship weapons, components, FPS weapons and armour with stats, pictures, prices and where to buy.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c111a",
+  "theme_color": "#0c111a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "games",
+    "utilities",
+    "reference"
+  ]
+}
