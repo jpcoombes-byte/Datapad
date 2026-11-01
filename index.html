@@ -240,6 +240,13 @@ body.has-tray .wrap { padding-bottom: 72px; }
 .cmp tr.grp td { background: var(--panel-2); }
 .cmp td.best { color: var(--accent); font-weight: 600; }
 .cmp td.best::after { content: " ★"; font-size: 10px; }
+.cmp-wins { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.cmp-win { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cmp-win h3 { font-family: var(--font-display); font-size: 15px; margin: 0; line-height: 1.2; }
+.cmp-win h3 small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.cmp-win .wl { display: flex; flex-wrap: wrap; gap: 4px; }
+.cmp-win .w { font-size: 12px; padding: 2px 7px; border-radius: 3px; background: var(--accent-soft); color: var(--ink); white-space: nowrap; }
+.cmp-win .w b { font-family: var(--font-data); font-weight: 500; color: var(--accent); margin-left: 4px; }
 .cmp-opts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
 .pics { display: flex; flex-wrap: wrap; gap: 8px; }
 .pics a { text-decoration: none; color: var(--ink); }
@@ -1128,11 +1135,32 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
       body += `<tr class="grp"><th scope="row">Where to buy</th>${items.map(() => '<td></td>').join('')}</tr><tr><th scope="row">Shops</th>${items.map(s =>
         `<td>${s.shops.length ? s.shops.slice(0, 8).map(o => `${esc(o.shop)}${o.place && o.place !== o.shop ? ', ' + esc(o.place) : ''} – ${nf.format(o.price)}`).join('<br>') + (s.shops.length > 8 ? `<br><span class="note">+${s.shops.length - 8} more</span>` : '') : 'No shop prices'}</td>`).join('')}</tr>`;
     }
+    // who is ahead on what: rows where one item is uniquely best, with the margin over the runner-up
+    const wins = items.map(() => []);
+    fields.forEach(f => {
+      if (!f.better || f.kind !== 'num') return;
+      if (f.key === 'priceMax' && items.every(s => s.priceMax === s.priceMin)) return;
+      const vals = items.map(s => typeof s[f.key] === 'number' ? s[f.key] : null);
+      const nums = vals.filter(x => x !== null);
+      if (nums.length < 2) return;
+      const sorted = [...new Set(nums)].sort((a, b) => f.better === '+' ? b - a : a - b);
+      if (sorted.length < 2) return;
+      const top = sorted[0], next = sorted[1];
+      if (vals.filter(x => x === top).length !== 1) return;
+      const pct = next ? Math.abs(top - next) / Math.abs(next) * 100 : null;
+      wins[vals.indexOf(top)].push({ label: f.label, pct, dir: f.better });
+    });
+    const pctTxt = w => w.pct == null ? '' : (w.dir === '+' ? '+' : '−') + (w.pct >= 10 ? Math.round(w.pct) : w.pct.toFixed(1)) + '%';
+    const winsHtml = `<div class="cmp-wins">${items.map((s, i) => {
+      const ws = wins[i].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0));
+      return `<div class="cmp-win"><h3>${esc(s.name)}<small>${ws.length ? `Ahead on ${ws.length} stat${ws.length > 1 ? 's' : ''}` : 'Not ahead on any stat'}</small></h3>${ws.length ? `<div class="wl">${ws.map(w => `<span class="w">${esc(w.label)}${pctTxt(w) ? `<b>${pctTxt(w)}</b>` : ''}</span>`).join('')}</div>` : ''}</div>`;
+    }).join('')}</div>`;
     $('cmp').innerHTML = `<div class="cmp-in">
       <div class="cmp-head"><h2 id="cmpTitle">Compare ${v.noun[1]}</h2>
         <div class="cmp-opts"><label class="toggle"><input type="checkbox" id="cmpDiff" ${cmpDiffOnly ? 'checked' : ''}> Only show differences</label>
         <button class="btn" type="button" id="cmpClose">Close</button></div></div>
-      <p class="note">★ marks the best value in each row where higher or lower is clearly better.</p>
+      ${winsHtml}
+      <p class="note">Percentages show the lead over the next best. ★ marks the best value in each row where higher or lower is clearly better.</p>
       <div class="cmp-box"><table>
         <thead><tr><th></th>${items.map(s => `<th>${s.pic && (PIC.small[cur] || {})[s.pic] ? `<img class="cthumb" src="${PIC.large[s.pic] || PIC.small[cur][s.pic]}" alt="">` : ''}${esc(s.name)}<small>${esc(v.tags(s).filter(Boolean).join(' · '))}</small></th>`).join('')}</tr></thead>
         <tbody>${body}</tbody></table></div></div>`;
