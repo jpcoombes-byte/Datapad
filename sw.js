@@ -1,5 +1,5 @@
-// Datapad service worker — build efed7e2e9d
-const CACHE = 'datapad-efed7e2e9d';
+// Datapad service worker — build a009392678
+const CACHE = 'datapad-a009392678';
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon.png", "./img/armour-s.json", "./img/components-s.json", "./img/ships-s.json", "./img/shipweapons-s.json", "./img/weapons-s.json"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

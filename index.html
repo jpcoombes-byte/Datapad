@@ -571,35 +571,35 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   const VIEWS = {
     ships: {
       label: 'Ships', group: 'Ship', rows: DATA.ships, F: SHIP_F, noun: ['ship', 'ships'], hasShops: true,
-      quick: [['mfr', 'Manufacturer'], ['type', 'Type'], ['career', 'Career'], ['role', 'Role'], ['size', 'Size'], ['shopNames', 'Shop'], ['systems', 'System']],
+      quick: [['roleGroup', 'Role'], ['type', 'Type'], ['size', 'Size'], ['mfrGroup', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
       sort: 'priceMin', dir: 1, search: 'Search ship, maker, role, shop or location…',
       sub: 'Every flyable ship and ground vehicle in the current game files, with in-game aUEC prices and the dealerships that sell them. Tap an item for full specs and pictures, or tick up to four to compare.',
       tags: s => [s.mfr, s.type, s.career, s.role],
     },
     weapons: {
       label: 'FPS weapons', group: 'Personal', rows: DATA.weapons, F: WEAPON_F, noun: ['personal weapon', 'personal weapons'], hasShops: true,
-      quick: [['mfr', 'Manufacturer'], ['wtype', 'Weapon type'], ['wclass', 'Class'], ['category', 'Category'], ['size', 'Size'], ['dmgType', 'Damage type'], ['shopNames', 'Shop'], ['systems', 'System']],
+      quick: [['wgroup', 'Weapon type'], ['wclassGroup', 'Class'], ['mfrGroup', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
       sort: 'dps', dir: -1, search: 'Search weapon, skin, maker, type or class…',
       sub: 'Every personal (FPS) weapon, knife, grenade and gadget in the current game files. Skins with identical stats are folded into one row. Tap an item for the full stat sheet and pictures, or tick up to four to compare.',
       tags: s => [s.mfr, s.wtype, s.wclass, s.rarity],
     },
     armour: {
       label: 'Armour', group: 'Personal', rows: DATA.armour, F: ARMOUR_F, noun: ['armour piece', 'armour pieces'], hasShops: true,
-      quick: [['slot', 'Slot'], ['weight', 'Weight class'], ['mfr', 'Manufacturer'], ['rarity', 'Rarity'], ['shopNames', 'Shop'], ['systems', 'System']],
+      quick: [['slot', 'Slot'], ['weight', 'Weight class'], ['mfrGroup', 'Manufacturer'], ['rarity', 'Rarity'], ['shopNames', 'Shop'], ['systems', 'System']],
       sort: 'dmgRed', dir: -1, search: 'Search armour, colourway, maker or slot…',
       sub: 'Every personal armour piece in the current game files: helmets, cores, arms, legs, undersuits and backpacks. Colourways with identical stats are folded into one row. Tap an item for the full stat sheet and pictures, or tick up to four to compare.',
       tags: s => [s.mfr, s.slot, s.weight, s.rarity],
     },
     shipweapons: {
       label: 'Ship weapons', short: 'Weapons', group: 'Ship', rows: DATA.shipWeapons, F: SHIPWEAPON_F, noun: ['ship weapon', 'ship weapons'], hideEmpty: true, hasShops: true,
-      quick: [['ctype', 'Category'], ['itemType', 'Weapon type'], ['size', 'Size'], ['dmgType', 'Damage type'], ['mTracking', 'Missile tracking'], ['mfr', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
+      quick: [['wkind', 'Weapon type'], ['sizeBand', 'Size'], ['dmgType', 'Damage type'], ['mTracking', 'Missile tracking'], ['mfrGroup', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
       sort: 'dps', dir: -1, search: 'Search gun, missile, torpedo or maker…',
       sub: 'Ship guns, missiles and torpedoes in the current game files. Pick a category and the table shows the stats that matter for it. Tap an item for details, or tick up to four to compare.',
       tags: s => [s.ctype, s.itemType !== s.ctype && s.itemType, s.mfr, 'Size ' + s.size],
     },
     components: {
       label: 'Components', group: 'Ship', rows: DATA.components, F: COMPONENT_F, noun: ['component', 'components'], hideEmpty: true, hasShops: true,
-      quick: [['ctype', 'Component type'], ['size', 'Size'], ['grade', 'Grade'], ['cclass', 'Class'], ['mfr', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
+      quick: [['ctype', 'Component type'], ['size', 'Size'], ['grade', 'Grade'], ['cclass', 'Class'], ['mfrGroup', 'Manufacturer'], ['shopNames', 'Shop'], ['systems', 'System']],
       sort: 'size', dir: 1, search: 'Search component, maker or type…',
       sub: 'Shields, power plants, coolers, quantum drives, radars and mining lasers. Pick a component type and the table shows the stats that matter for it.',
       tags: s => [s.ctype, s.mfr, s.grade && 'Grade ' + s.grade, s.cclass],
@@ -611,15 +611,74 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
     other: 'No shop prices recorded yet. It may be loot or reward only, or players simply haven\'t logged it on UEX.',
   };
   const ORDER = ['ships', 'shipweapons', 'components', 'weapons', 'armour'];
+  // ---------- broad groups for the filters (the exact values stay in the table and detail sheet) ----------
+  const firstMatch = (rules, text, fallback) => { for (const [re, label] of rules) if (re.test(text)) return label; return fallback; };
+  const SHOP_RULES = [
+    [/^Live Fire/i, 'Live Fire Weapons'], [/^(FPS Armor|Armor$)/i, 'Station armour shops'], [/^Guns\b/i, 'Station gun shops'],
+    [/^Cubby/i, 'Cubby Blast'], [/^Skutters/i, 'Skutters'], [/^CenterMass/i, 'CenterMass'], [/^Conscientious/i, 'Conscientious Objects'],
+    [/^Dumper/i, "Dumper's Depot"], [/^Cousin Crow/i, "Cousin Crow's"], [/^Cordry/i, "Cordry's"], [/^Omega/i, 'Omega Pro'],
+    [/^Shubin/i, 'Shubin Interstellar'], [/^Covalex/i, 'Covalex'], [/^Gear Up/i, 'Gear Up'], [/^Tammany/i, 'Tammany and Sons'],
+    [/^Platinum Bay/i, 'Platinum Bay'], [/^Teach/i, "Teach's"], [/^(Cargo|Refinery)/i, 'Cargo & refinery shops'],
+    [/^Weapons ?(and|&) ?Armor/i, 'Weapons & Armor'], [/pharmacy|medical|hospital|clinic/i, 'Medical shops'],
+    [/^Buy ?(&|and) ?Fly/i, 'Buy & Fly'], [/shooters/i, 'Sharp Shooters'],
+    [/^Ship Weapons/i, 'Ship weapon shops'], [/^Ship Parts/i, 'Ship part shops'], [/^Hurston Dynamics/i, 'Hurston Dynamics'],
+    [/^(Shop|Equipment|Tools|Nyx Nax|Kel-To|Providence|Frostbite|Sharp Shooters|FPS Shop)\b/i, 'Outpost & general stores'],
+  ];
+  const shopGroup = name => firstMatch(SHOP_RULES, name, name);
+  const ROLE_RULES = [
+    [/tank|anti-air|anti-vehicle/i, 'Ground combat'], [/racing/i, 'Racing'], [/frigate|destroyer|corvette|carrier/i, 'Capital ships'],
+    [/dropship/i, 'Dropships'], [/mining/i, 'Mining'], [/salvage|recovery/i, 'Salvage'], [/medical|refuel/i, 'Medical & refuelling'],
+    [/freight.*(fighter|gun ?ship)|modular/i, 'Multi-role'], [/freight|cargo/i, 'Cargo'], [/bomber|gun ?ship/i, 'Bombers & gunships'],
+    [/interdiction/i, 'Interdiction'], [/fighter|interceptor|^combat$/i, 'Fighters'],
+    [/pathfinder|expedition|generalist|science|reporting|data/i, 'Exploration & science'], [/touring|passenger|transport/i, 'Touring & passengers'],
+  ];
+  const FPS_RULES = [
+    [/^(Pistol|Frag Pistol)$/, 'Pistols'], [/^SMG$/, 'SMGs'], [/^(Assault Rifle|Rifle)$/, 'Rifles'], [/^Shotgun$/, 'Shotguns'],
+    [/^(Sniper Rifle|Railgun)$/, 'Sniper rifles'], [/^(LMG|HMG|Launcher|Missile Launcher|Grenade Launcher)$/, 'Heavy weapons & launchers'],
+    [/^Knife$/, 'Knives'], [/^Grenade$/, 'Grenades'], [/^(Tractor Beam|Utility|Medical Device|Fire Extinguisher|Gadget)$/, 'Tools & gadgets'],
+  ];
+  const GUN_RULES = [[/scatter/i, 'Scatterguns'], [/gatling/i, 'Gatlings'], [/repeater/i, 'Repeaters'], [/beam/i, 'Beams'],
+    [/rocket/i, 'Rocket pods'], [/cannon|canon|turret/i, 'Cannons']];
+  const sizeBand = n => n == null ? '' : n <= 2 ? 'S1–2 small' : n <= 4 ? 'S3–4 medium' : n <= 6 ? 'S5–6 large' : 'S7+ capital';
+  const MFR_FIX = { 'Vanduul': 'Vanduul Clans', 'Wen/Cassel': 'Wen-Cassel Propulsion', 'Unknown': '' };
+  function makerGroups(list, keep) {
+    // the biggest makers keep their own entry; the long tail is bundled as "Other makers"
+    const count = {};
+    list.forEach(s => { const m = MFR_FIX[s.mfr] ?? s.mfr; if (m) count[m] = (count[m] || 0) + 1; });
+    const top = new Set(Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, keep).map(e => e[0]));
+    list.forEach(s => { const m = MFR_FIX[s.mfr] ?? s.mfr; s.mfrGroup = m && top.has(m) ? m : 'Other makers'; });
+  }
+  DATA.ships.forEach(s => { s.roleGroup = firstMatch(ROLE_RULES, s.role || '', 'Other'); });
+  DATA.weapons.forEach(s => {
+    s.wgroup = firstMatch(FPS_RULES, s.wtype || '', 'Other');
+    const c = s.wclass || '';
+    s.wclassGroup = /ballistic/i.test(c) ? 'Ballistic' : /energy|electron|laser|plasma/i.test(c) ? 'Energy' : /melee/i.test(c) ? 'Melee' : /gadget/i.test(c) ? 'Gadget' : 'Other';
+  });
+  DATA.shipWeapons.forEach(s => {
+    s.wkind = s.ctype === 'Missile' ? 'Missiles' : s.ctype === 'Torpedo' ? 'Torpedoes' : firstMatch(GUN_RULES, s.itemType || '', 'Other guns');
+    s.sizeBand = sizeBand(s.size);
+  });
+  function shopTop(list, keep) {
+    // the shops that stock the most items keep their own entry; the rest are bundled as "Other shops"
+    const count = {};
+    list.forEach(s => s.shopNames.forEach(n => count[n] = (count[n] || 0) + 1));
+    const top = new Set(Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, keep).map(e => e[0]));
+    list.forEach(s => { s.shopNames = [...new Set(s.shopNames.map(n => top.has(n) ? n : 'Other shops'))]; });
+  }
+  makerGroups(DATA.ships, 14); makerGroups(DATA.shipWeapons, 12); makerGroups(DATA.components, 14);
+  makerGroups(DATA.weapons, 12); makerGroups(DATA.armour, 14);
+
   // derived fields + search text
   [DATA.ships, DATA.weapons, DATA.armour, DATA.components, DATA.shipWeapons].forEach(list => list.forEach(s => {
     s.shops = s.shops || [];
-    s.shopNames = [...new Set(s.shops.map(o => o.shop))];
+    s.shopNames = [...new Set(s.shops.map(o => shopGroup(o.shop)))];
     s.systems = [...new Set(s.shops.map(o => o.system).filter(Boolean))];
     s.shopCount = s.shops.length || null;
   }));
+  [DATA.weapons, DATA.armour, DATA.components, DATA.shipWeapons].forEach(list => shopTop(list, 12));
   Object.values(VIEWS).forEach(v => {
     v.FK = Object.fromEntries(v.F.map(f => [f.key, f]));
+    v.quick.forEach(([k, l]) => { if (!v.FK[k]) v.FK[k] = { key: k, label: l, kind: 'text', filterOnly: true }; });
     v.rows.forEach((s, idx) => {
       s._i = idx;
       const extra = (s.shops || []).map(o => [o.shop, o.place, o.body, o.system].join(' '));
@@ -695,7 +754,8 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   const uniq = key => {
     const set = new Set();
     V().rows.forEach(s => { const val = s[key]; (Array.isArray(val) ? val : [val]).forEach(x => { if (x !== null && x !== '' && x !== undefined) set.add(x); }); });
-    return [...set].sort((a, b) => typeof a === 'number' ? a - b : String(a).localeCompare(String(b)));
+    const last = x => /^Other\b/.test(String(x)) ? 1 : 0;
+    return [...set].sort((a, b) => last(a) - last(b) || (typeof a === 'number' ? a - b : String(a).localeCompare(String(b))));
   };
   function buildControls() {
     const v = V();
@@ -712,7 +772,12 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   function syncInputs() {
     const v = V(), st = S();
     $('q').value = st.q; $('buyable').checked = st.buyable;
-    v.quick.forEach(([k]) => { $('f_' + k).value = st.sel[k] || ''; });
+    Object.keys(st.sel).forEach(k => { if (!v.quick.some(q => q[0] === k)) delete st.sel[k]; });
+    v.quick.forEach(([k]) => {
+      const el = $('f_' + k);
+      if (st.sel[k] && ![...el.options].some(o => o.value === String(st.sel[k]))) delete st.sel[k];
+      el.value = st.sel[k] || '';
+    });
     v.F.filter(f => f.kind === 'num').forEach(f => { const r = st.ranges[f.key] || ['', '']; $('min_' + f.key).value = r[0]; $('max_' + f.key).value = r[1]; });
     renderCols();
   }
